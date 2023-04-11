@@ -34,17 +34,17 @@ If linked with official [mariadb](https://hub.docker.com/_/mariadb/) image with 
 
 PowerDNS server is configurable via env vars. Every variable starting with `PDNS_` will be inserted into `/etc/pdns/pdns.conf` conf file in the following way: prefix `PDNS_` will be stripped and every `_` will be replaced with `-`. For example, from above mysql config, `PDNS_gmysql_host=mysql` will became `gmysql-host=mysql` in `/etc/pdns/pdns.conf` file. This way, you can configure PowerDNS server any way you need within a `docker run` command.
 
-There is also a `SUPERMASTER_IPS` env var supported, which can be used to configure supermasters for slave dns server. [Docs](https://doc.powerdns.com/md/authoritative/modes-of-operation/#supermaster-automatic-provisioning-of-slaves). Multiple ip addresses separated by space should work.
+There is also a `SUPERMASTER_IPS` env var supported, which can be used to configure autoprimaries for secondary dns server. [Docs](https://doc.powerdns.com/authoritative/modes-of-operation.html#autoprimary-automatic-provisioning-of-secondaries). Multiple ip addresses separated by space should work.
 
-You can find [here](https://doc.powerdns.com/md/authoritative/) all available settings.
+You can find all available settings in the [Authoritative Server Settings](https://doc.powerdns.com/authoritative/settings.html) section of the PowerDNS documentation.
 
 ### Examples
 
-Master server with API enabled and with one slave server configured:
+Primary server with API enabled and with one secondary server configured:
 ```
-docker run -d -p 53:53 -p 53:53/udp --name pdns-master \
+docker run -d -p 53:53 -p 53:53/udp --name pdns-primary \
   --hostname ns1.example.com --link mariadb:mysql \
-  -e PDNS_master=yes \
+  -e PDNS_primary=yes \
   -e PDNS_api=yes \
   -e PDNS_api_key=secret \
   -e PDNS_webserver=yes \
@@ -57,12 +57,12 @@ docker run -d -p 53:53 -p 53:53/udp --name pdns-master \
   pschiffe/pdns-mysql
 ```
 
-Slave server with supermaster:
+Secondary server with autoprimary:
 ```
-docker run -d -p 53:53 -p 53:53/udp --name pdns-slave \
+docker run -d -p 53:53 -p 53:53/udp --name pdns-secondary \
   --hostname ns2.example.com --link mariadb:mysql \
-  -e PDNS_gmysql_dbname=powerdnsslave \
-  -e PDNS_slave=yes \
+  -e PDNS_gmysql_dbname=powerdnssecondary \
+  -e PDNS_secondary=yes \
   -e PDNS_version_string=anonymous \
   -e PDNS_disable_axfr=yes \
   -e PDNS_allow_notify_from=172.5.0.20 \
@@ -154,7 +154,7 @@ There is a directory with user uploads which should be persistent: `/opt/powerdn
 When linked with pdns-mysql from this repo and with LDAP auth:
 ```
 docker run -d --name pdns-admin-uwsgi \
-  --link mariadb:mysql --link pdns-master:pdns \
+  --link mariadb:mysql --link pdns-primary:pdns \
   -v pdns-admin-upload:/opt/powerdns-admin/upload \
   pschiffe/pdns-admin-uwsgi
 ```
