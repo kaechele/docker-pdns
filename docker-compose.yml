@@ -35,7 +35,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
 
-  pdns-master:
+  pdns-primary:
     image: pschiffe/pdns-mysql:${PDNS_MYSQL_TAG:-latest}
     hostname: ns1.example.com
     networks:
@@ -50,7 +50,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
     environment:
       - PDNS_gmysql_password=my-secret-pw
-      - PDNS_master=yes
+      - PDNS_primary=yes
       - PDNS_api=yes
       - PDNS_api_key=secret
       - PDNS_webserver=yes
@@ -63,7 +63,7 @@ services:
     depends_on:
       - mariadb
 
-  pdns-slave:
+  pdns-secondary:
     image: pschiffe/pdns-mysql:${PDNS_MYSQL_TAG:-latest}
     hostname: ns2.example.com
     networks:
@@ -75,10 +75,10 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
     environment:
-      - PDNS_gmysql_dbname=powerdnsslave
+      - PDNS_gmysql_dbname=powerdnssecondary
       - PDNS_gmysql_password=my-secret-pw
-      - PDNS_slave=yes
-      - PDNS_superslave=yes
+      - PDNS_secondary=yes
+      - PDNS_autosecondary=yes
       - PDNS_webserver=yes
       - PDNS_webserver_address=0.0.0.0
       - PDNS_webserver_allow_from=172.6.0.0/16
@@ -88,7 +88,7 @@ services:
       - SUPERMASTER_IPS=172.6.0.20
     depends_on:
       - mariadb
-      - pdns-master
+      - pdns-primary
 
   pdns-admin-uwsgi:
     image: pschiffe/pdns-admin-uwsgi
@@ -104,7 +104,7 @@ services:
       - PDNS_API_KEY=secret
     depends_on:
       - mariadb
-      - pdns-master
+      - pdns-primary
 
   pdns-admin-static:
     image: pschiffe/pdns-admin-static

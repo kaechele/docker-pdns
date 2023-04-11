@@ -3,31 +3,31 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   labels:
-    app.kubernetes.io/name: pdns-slave
+    app.kubernetes.io/name: pdns-secondary
     app.kubernetes.io/part-of: pdns
-    app.kubernetes.io/component: slave
-  name: pdns-slave 
+    app.kubernetes.io/component: secondary
+  name: pdns-secondary
 spec:
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      app.kubernetes.io/name: pdns-slave
+      app.kubernetes.io/name: pdns-secondary
       app.kubernetes.io/part-of: pdns
-      app.kubernetes.io/component: slave
+      app.kubernetes.io/component: secondary
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app.kubernetes.io/name: pdns-slave
+        app.kubernetes.io/name: pdns-secondary
         app.kubernetes.io/part-of: pdns
-        app.kubernetes.io/component: slave
+        app.kubernetes.io/component: secondary
     spec:
       nodeSelector:
-        node-role.kubernetes.io/pdns-slave: "true"
+        node-role.kubernetes.io/pdns-secondary: "true"
       containers:
       - image: pschiffe/pdns-mysql:alpine
         imagePullPolicy: IfNotPresent
-        name: pdns-slave
+        name: pdns-secondary
         env:
         - name: NODE_NAME
           valueFrom:
@@ -48,22 +48,22 @@ spec:
               name: mariadb-pdns-secret
               key: password
         - name: PDNS_gmysql_dbname
-          value: "slave_"
+          value: "secondary_"
         - name: PDNS_version_string
           value: "anonymous"
         - name: PDNS_disable_axfr
           value: "yes"
-        - name: PDNS_slave
+        - name: PDNS_secondary
           value: "yes"
-        - name: PDNS_superslave
+        - name: PDNS_autosecondary
           value: "yes"
-        - name: PDNS_allow_unsigned_supermaster
+        - name: PDNS_allow_unsigned_autoprimary
           value: "no"
         - name: PDNS_allow_notify_from
           value: "10.0.0.1"
-        - name: SUPERMASTER_HOSTS
+        - name: AUTOPRIMARY_HOSTS
           value: "ns1.example.com"
-        - name: SUPERMASTER_IPS
+        - name: AUTOPRIMARY_IPS
           value: "10.0.0.1"
         ports:
         - name: dns-udp

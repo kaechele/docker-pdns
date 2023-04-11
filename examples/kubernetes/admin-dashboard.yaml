@@ -56,13 +56,13 @@ spec:
         - name: PDNS_ADMIN_SQLA_DB_NAME
           value: "'pdnsadmin'"
         - name: PDNS_API_URL
-          value: "http://master-api-pdns:8081/"
+          value: "http://primary-api-pdns:8081/"
         - name: PDNS_VERSION
           value: "4.7"
         - name: PDNS_API_KEY
           valueFrom:
             secretKeyRef:
-              name: master-pdns-secret
+              name: primary-pdns-secret
               key: apikey
         volumeMounts:
           - name: uploads

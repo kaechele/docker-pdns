@@ -61,26 +61,31 @@ if [ "$MYSQL_NUM_TABLE" -eq 0 ]; then
     $MYSQL_COMMAND -D "$PDNS_gmysql_dbname" < /usr/share/doc/pdns/4.3.0_to_4.7.0_schema.mysql.sql
 fi
 
-if [ "${PDNS_superslave:-no}" == "yes" ]; then
-    # Configure supermasters if needed
-    if [ "${SUPERMASTER_IPS:-}" ]; then
+# Alias vars using naming schema deprecated in PDNS
+: "${PDNS_autosecondary:=${PDNS_superslave:-no}}"
+: "${AUTOPRIMARY_IPS:=${SUPERMASTER_IPS:-}}"
+: "${AUTOPRIMARY_HOSTS:=${SUPERMASTER_HOSTS:-}}"
+
+if [ "${PDNS_autosecondary:-no}" == "yes" ]; then
+    # Configure autoprimaries if needed
+    if [ "${AUTOPRIMARY_IPS:-}" ]; then
         $MYSQL_COMMAND -D "$PDNS_gmysql_dbname" -e "TRUNCATE supermasters;"
-        MYSQL_INSERT_SUPERMASTERS=''
-        if [ "${SUPERMASTER_COUNT:-0}" == "0" ]; then
-            SUPERMASTER_COUNT=10
+        MYSQL_INSERT_AUTOPRIMARIES=''
+        if [ "${AUTOPRIMARY_COUNT:-0}" == "0" ]; then
+            AUTOPRIMARY_COUNT=10
         fi
-        i=1; while [ $i -le ${SUPERMASTER_COUNT} ]; do
-            SUPERMASTER_HOST=$(echo ${SUPERMASTER_HOSTS:-} | awk -v col="$i" '{ print $col }')
-            SUPERMASTER_IP=$(echo ${SUPERMASTER_IPS} | awk -v col="$i" '{ print $col }')
+        i=1; while [ $i -le ${AUTOPRIMARY_COUNT} ]; do
+            AUTOPRIMARY_HOST=$(echo ${AUTOPRIMARY_HOSTS:-} | awk -v col="$i" '{ print $col }')
+            AUTOPRIMARY_IP=$(echo ${AUTOPRIMARY_IPS} | awk -v col="$i" '{ print $col }')
             if [ -z "${SUPERMASTER_HOST:-}" ]; then
-                SUPERMASTER_HOST=$(hostname -f)
+                AUTOPRIMARY_HOST=$(hostname -f)
             fi
-            if [ "${SUPERMASTER_IP:-}" ]; then
-                MYSQL_INSERT_SUPERMASTERS="${MYSQL_INSERT_SUPERMASTERS} INSERT INTO supermasters VALUES('${SUPERMASTER_IP}', '${SUPERMASTER_HOST}', 'admin');"
+            if [ "${AUTOPRIMARY_IP:-}" ]; then
+                MYSQL_INSERT_AUTOPRIMARIES="${MYSQL_INSERT_AUTOPRIMARIES} INSERT INTO supermasters VALUES('${AUTOPRIMARY_IP}', '${AUTOPRIMARY_HOST}', 'admin');"
             fi
             i=$(( i + 1 ))
         done
-        $MYSQL_COMMAND -D "$PDNS_gmysql_dbname" -e "$MYSQL_INSERT_SUPERMASTERS"
+        $MYSQL_COMMAND -D "$PDNS_gmysql_dbname" -e "$MYSQL_INSERT_AUTOPRIMARIES"
     fi
 fi
 

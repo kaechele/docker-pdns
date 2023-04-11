@@ -1,8 +1,8 @@
 ---
 - hosts: localhost
   vars:
-    pdns_master_ip: 172.5.0.20
-    pdns_slave_ip: 172.5.0.21
+    pdns_primary_ip: 172.5.0.20
+    pdns_secondary_ip: 172.5.0.21
     wipe: false
     c_state: '{{ "absent" if wipe | bool else "started" }}'
     i_state: present
@@ -125,7 +125,7 @@
       tags:
         - pdns
 
-    - name: pdns master
+    - name: pdns primary
       docker_container:
         name: pdns
         image: pschiffe/pdns-mysql:{{ "alpine" if alpine | bool else "latest" }}
@@ -134,15 +134,15 @@
         networks_cli_compatible: true
         networks:
           - name: pdns-net
-            ipv4_address: '{{ pdns_master_ip }}'
+            ipv4_address: '{{ pdns_primary_ip }}'
         etc_hosts:
-          ns1.example.com: '{{ pdns_master_ip }}'
-          ns2.example.com: '{{ pdns_slave_ip }}'
+          ns1.example.com: '{{ pdns_primary_ip }}'
+          ns2.example.com: '{{ pdns_secondary_ip }}'
         volumes:
           - /etc/localtime:/etc/localtime:ro
         env:
           PDNS_gmysql_password: 'my-secret-pw'
-          PDNS_master: 'yes'
+          PDNS_primary: 'yes'
           PDNS_api: 'yes'
           PDNS_api_key: 'secret'
           PDNS_webserver: 'yes'
@@ -150,38 +150,38 @@
           PDNS_webserver_allow_from: '172.5.0.0/16'
           PDNS_version_string: 'anonymous'
           PDNS_default_ttl: '1500'
-          PDNS_allow_axfr_ips: '{{ pdns_slave_ip }}'
-          PDNS_only_notify: '{{ pdns_slave_ip }}'
+          PDNS_allow_axfr_ips: '{{ pdns_secondary_ip }}'
+          PDNS_only_notify: '{{ pdns_secondary_ip }}'
       tags:
         - pdns
 
-    - name: pdns slave
+    - name: pdns secondary
       docker_container:
-        name: pdns-slave
+        name: pdns-secondary
         image: pschiffe/pdns-mysql:{{ "alpine" if alpine | bool else "latest" }}
         state: '{{ c_state }}'
         hostname: ns2.example.com
         networks_cli_compatible: true
         networks:
           - name: pdns-net
-            ipv4_address: '{{ pdns_slave_ip }}'
+            ipv4_address: '{{ pdns_secondary_ip }}'
         etc_hosts:
-          ns1.example.com: '{{ pdns_master_ip }}'
-          ns2.example.com: '{{ pdns_slave_ip }}'
+          ns1.example.com: '{{ pdns_primary_ip }}'
+          ns2.example.com: '{{ pdns_secondary_ip }}'
         volumes:
           - /etc/localtime:/etc/localtime:ro
         env:
-          PDNS_gmysql_dbname: 'powerdnsslave'
+          PDNS_gmysql_dbname: 'powerdnssecondary'
           PDNS_gmysql_password: 'my-secret-pw'
-          PDNS_slave: 'yes'
-          PDNS_superslave: 'yes'
+          PDNS_secondary: 'yes'
+          PDNS_autosecondary: 'yes'
           PDNS_webserver: 'yes'
           PDNS_webserver_address: '0.0.0.0'
           PDNS_webserver_allow_from: '172.5.0.0/16'
           PDNS_version_string: 'anonymous'
           PDNS_disable_axfr: 'yes'
-          PDNS_allow_notify_from: '{{ pdns_master_ip }}'
-          SUPERMASTER_IPS: '{{ pdns_master_ip }}'
+          PDNS_allow_notify_from: '{{ pdns_primary_ip }}'
+          SUPERMASTER_IPS: '{{ pdns_primary_ip }}'
       tags:
         - pdns
 
